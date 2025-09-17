@@ -1,0 +1,232 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  SECRETARY
+}
+
+enum AppointmentStatus {
+  SCHEDULED    // Programado
+  CONFIRMED    // Confirmado
+  CANCELLED    // Cancelado
+  COMPLETED    // Completado
+  NO_SHOW      // No se presentó
+}
+
+enum NotificationStatus {
+  PENDING      // Pendiente
+  SENT         // Enviado
+  DELIVERED    // Entregado
+  FAILED       // Fallido
+  READ         // Leído
+}
+
+enum NotificationType {
+  CONFIRMATION // Confirmación de turno
+  REMINDER     // Recordatorio
+  CANCELLATION // Cancelación
+  MODIFICATION // Modificación
+  CUSTOM       // Personalizado
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  role      UserRole @default(SECRETARY)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  createdAppointments Appointment[] @relation("CreatedByUser")
+  updatedAppointments Appointment[] @relation("UpdatedByUser")
+
+  @@map("users")
+}
+
+model Patient {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String   @unique
+  document    String   @unique
+  dateOfBirth DateTime?
+  address     String?
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  appointments  Appointment[]
+  notifications Notification[]
+
+  @@map("patients")
+}
+
+model Professional {
+  id          String   @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String?
+  phone       String?
+  license     String?  @unique // Matrícula profesional
+  specialties String[] // Array de especialidades
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  appointments    Appointment[]
+  workingHours    WorkingHour[]
+  scheduleBlocks  ScheduleBlock[]
+  treatmentTypes  TreatmentType[]
+
+  @@map("professionals")
+}
+
+model TreatmentType {
+  id           String @id @default(cuid())
+  name         String
+  description  String?
+  duration     Int    // Duración en minutos
+  price        Float?
+  color        String? // Color para el calendario
+  isActive     Boolean @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relaciones
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  professionalId String
+  appointments   Appointment[]
+
+  @@map("treatment_types")
+}
+
+model WorkingHour {
+  id        String @id @default(cuid())
+  dayOfWeek Int    // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  startTime String // Formato HH:MM
+  endTime   String // Formato HH:MM
+  isActive  Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relaciones
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  professionalId String
+
+  @@unique([professionalId, dayOfWeek])
+  @@map("working_hours")
+}
+
+model ScheduleBlock {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  isRecurring Boolean  @default(false)
+  recurrenceRule String? // Regla de recurrencia (ej: RRULE)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  professional   Professional @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  professionalId String
+
+  @@map("schedule_blocks")
+}
+
+model Appointment {
+  id          String            @id @default(cuid())
+  startTime   DateTime
+  endTime     DateTime
+  status      AppointmentStatus @default(SCHEDULED)
+  notes       String?
+  observations String?          // Observaciones post-consulta
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relaciones
+  patient        Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId      String
+  professional   Professional  @relation(fields: [professionalId], references: [id], onDelete: Cascade)
+  professionalId String
+  treatmentType  TreatmentType @relation(fields: [treatmentTypeId], references: [id], onDelete: Restrict)
+  treatmentTypeId String
+  createdBy      User          @relation("CreatedByUser", fields: [createdById], references: [id])
+  createdById    String
+  updatedBy      User?         @relation("UpdatedByUser", fields: [updatedById], references: [id])
+  updatedById    String?
+
+  notifications Notification[]
+
+  // Índices para optimizar consultas
+  @@index([startTime, professionalId])
+  @@index([patientId, startTime])
+  @@index([status, startTime])
+  @@map("appointments")
+}
+
+model Notification {
+  id          String              @id @default(cuid())
+  type        NotificationType
+  channel     NotificationChannel
+  recipient   String              // Número de teléfono o email
+  subject     String?             // Para emails
+  message     String
+  status      NotificationStatus  @default(PENDING)
+  scheduledAt DateTime?           // Cuándo debe enviarse
+  sentAt      DateTime?           // Cuándo se envió
+  deliveredAt DateTime?           // Cuándo se entregó
+  errorMessage String?            // Mensaje de error si falló
+  retryCount  Int                 @default(0)
+  maxRetries  Int                 @default(3)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relaciones
+  patient       Patient?     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  patientId     String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  appointmentId String?
+
+  // Índices para optimizar consultas
+  @@index([status, scheduledAt])
+  @@index([patientId, createdAt])
+  @@index([appointmentId])
+  @@map("notifications")
+}
+
+model SystemConfig {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String
+  description String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
+}

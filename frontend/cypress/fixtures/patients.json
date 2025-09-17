@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "id": "patient-1",
+      "name": "Juan Pérez",
+      "email": "juan@example.com",
+      "phone": "+54 11 1234-5678",
+      "document": "12345678",
+      "birthDate": "1990-01-01",
+      "address": "Av. Corrientes 1234",
+      "isActive": true,
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "patient-2",
+      "name": "María González",
+      "email": "maria@example.com",
+      "phone": "+54 11 2345-6789",
+      "document": "23456789",
+      "birthDate": "1985-05-15",
+      "address": "Av. Santa Fe 5678",
+      "isActive": true,
+      "createdAt": "2024-01-02T00:00:00.000Z",
+      "updatedAt": "2024-01-02T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 2,
+    "totalPages": 1
+  }
+}

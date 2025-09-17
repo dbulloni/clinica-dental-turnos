@@ -1,0 +1,64 @@
+{
+  "data": [
+    {
+      "id": "appointment-1",
+      "patientId": "patient-1",
+      "professionalId": "professional-1",
+      "treatmentTypeId": "treatment-1",
+      "date": "2024-12-20",
+      "time": "10:00",
+      "duration": 30,
+      "status": "SCHEDULED",
+      "notes": "Consulta de rutina",
+      "patient": {
+        "id": "patient-1",
+        "name": "Juan Pérez",
+        "phone": "+54 11 1234-5678"
+      },
+      "professional": {
+        "id": "professional-1",
+        "name": "Dr. Carlos López"
+      },
+      "treatmentType": {
+        "id": "treatment-1",
+        "name": "Consulta General",
+        "duration": 30
+      },
+      "createdAt": "2024-01-01T00:00:00.000Z",
+      "updatedAt": "2024-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "appointment-2",
+      "patientId": "patient-2",
+      "professionalId": "professional-1",
+      "treatmentTypeId": "treatment-2",
+      "date": "2024-12-20",
+      "time": "11:00",
+      "duration": 60,
+      "status": "CONFIRMED",
+      "notes": "Limpieza dental",
+      "patient": {
+        "id": "patient-2",
+        "name": "María González",
+        "phone": "+54 11 2345-6789"
+      },
+      "professional": {
+        "id": "professional-1",
+        "name": "Dr. Carlos López"
+      },
+      "treatmentType": {
+        "id": "treatment-2",
+        "name": "Limpieza Dental",
+        "duration": 60
+      },
+      "createdAt": "2024-01-02T00:00:00.000Z",
+      "updatedAt": "2024-01-02T00:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 2,
+    "totalPages": 1
+  }
+}

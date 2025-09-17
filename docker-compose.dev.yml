@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: clinica-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: clinica_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - clinica-dev-network
+
+  # Redis for development
+  redis:
+    image: redis:7-alpine
+    container_name: clinica-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_dev_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - clinica-dev-network
+
+  # Backend in development mode
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: clinica-backend-dev
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/clinica_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-key
+      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-key
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - ./backend/uploads:/app/uploads
+    ports:
+      - "3001:3001"
+      - "9229:9229" # Debug port
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - clinica-dev-network
+    command: npm run dev
+
+  # Frontend in development mode
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: clinica-frontend-dev
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+      VITE_APP_NAME: Clínica Dental (Dev)
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend-dev
+    networks:
+      - clinica-dev-network
+    command: npm run dev
+
+  # Mailhog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: clinica-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025" # SMTP
+      - "8025:8025" # Web UI
+    networks:
+      - clinica-dev-network
+
+  # Adminer for database management
+  adminer:
+    image: adminer:latest
+    container_name: clinica-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - clinica-dev-network
+
+volumes:
+  postgres_dev_data:
+    driver: local
+  redis_dev_data:
+    driver: local
+
+networks:
+  clinica-dev-network:
+    driver: bridge
